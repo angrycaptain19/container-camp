@@ -74,16 +74,14 @@ class Completer:
             self.namespace = __main__.__dict__
 
         if not text.strip():
-            if state == 0:
-                if _readline_available:
-                    readline.insert_text('\t')
-                    readline.redisplay()
-                    return ''
-                else:
-                    return '\t'
-            else:
+            if state != 0:
                 return None
 
+            if not _readline_available:
+                return '\t'
+            readline.insert_text('\t')
+            readline.redisplay()
+            return ''
         if state == 0:
             if "." in text:
                 self.matches = self.attr_matches(text)
@@ -167,7 +165,7 @@ def get_class_members(klass):
     ret = dir(klass)
     if hasattr(klass,'__bases__'):
         for base in klass.__bases__:
-            ret = ret + get_class_members(base)
+            ret += get_class_members(base)
     return ret
 
 try:

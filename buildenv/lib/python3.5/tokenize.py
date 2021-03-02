@@ -191,8 +191,7 @@ endpats = {"'": Single, '"': Double,
            'r': None, 'R': None, 'b': None, 'B': None,
            'u': None, 'U': None}
 
-triple_quoted = {}
-for t in ("'''", '"""',
+triple_quoted = {t: t for t in ("'''", '"""',
           "r'''", 'r"""', "R'''", 'R"""',
           "b'''", 'b"""', "B'''", 'B"""',
           "br'''", 'br"""', "Br'''", 'Br"""',
@@ -200,10 +199,8 @@ for t in ("'''", '"""',
           "rb'''", 'rb"""', "rB'''", 'rB"""',
           "Rb'''", 'Rb"""', "RB'''", 'RB"""',
           "u'''", 'u"""', "U'''", 'U"""',
-          ):
-    triple_quoted[t] = t
-single_quoted = {}
-for t in ("'", '"',
+          )}
+single_quoted = {t: t for t in ("'", '"',
           "r'", 'r"', "R'", 'R"',
           "b'", 'b"', "B'", 'B"',
           "br'", 'br"', "Br'", 'Br"',
@@ -211,13 +208,10 @@ for t in ("'", '"',
           "rb'", 'rb"', "rB'", 'rB"',
           "Rb'", 'Rb"', "RB'", 'RB"' ,
           "u'", 'u"', "U'", 'U"',
-          ):
-    single_quoted[t] = t
-
+          )}
 tabsize = 8
 
 class TokenError(Exception): pass
-
 class StopTokenizing(Exception): pass
 
 
@@ -509,7 +503,7 @@ def _tokenize(readline, encoding):
             # BOM will already have been stripped.
             encoding = "utf-8"
         yield TokenInfo(ENCODING, encoding, (0, 0), (0, 0), '')
-    while True:             # loop over lines in stream
+    while True:         # loop over lines in stream
         try:
             line = readline()
         except StopIteration:
@@ -520,7 +514,7 @@ def _tokenize(readline, encoding):
         lnum += 1
         pos, max = 0, len(line)
 
-        if contstr:                            # continued string
+        if contstr:                    # continued string
             if not line:
                 raise TokenError("EOF in multi-line string", strstart)
             endmatch = endprog.match(line)
@@ -537,7 +531,7 @@ def _tokenize(readline, encoding):
                 contline = None
                 continue
             else:
-                contstr = contstr + line
+                contstr += line
                 contline = contline + line
                 continue
 
@@ -599,7 +593,7 @@ def _tokenize(readline, encoding):
 
         while pos < max:
             pseudomatch = _compile(PseudoToken).match(line, pos)
-            if pseudomatch:                                # scan for tokens
+            if pseudomatch:                    # scan for tokens
                 start, end = pseudomatch.span(1)
                 spos, epos, pos = (lnum, start), (lnum, end), end
                 if start == end:
@@ -652,30 +646,30 @@ def _tokenize(readline, encoding):
                     else:                                  # ordinary string
                         yield TokenInfo(STRING, token, spos, epos, line)
                 elif initial.isidentifier():               # ordinary name
-                    if token in ('async', 'await'):
-                        if async_def:
-                            yield TokenInfo(
-                                ASYNC if token == 'async' else AWAIT,
-                                token, spos, epos, line)
-                            continue
+                    if token in ('async', 'await') and async_def:
+                        yield TokenInfo(
+                            ASYNC if token == 'async' else AWAIT,
+                            token, spos, epos, line)
+                        continue
 
                     tok = TokenInfo(NAME, token, spos, epos, line)
                     if token == 'async' and not stashed:
                         stashed = tok
                         continue
 
-                    if token == 'def':
-                        if (stashed
-                                and stashed.type == NAME
-                                and stashed.string == 'async'):
+                    if token == 'def' and (
+                        stashed
+                        and stashed.type == NAME
+                        and stashed.string == 'async'
+                    ):
 
-                            async_def = True
-                            async_def_indent = indents[-1]
+                        async_def = True
+                        async_def_indent = indents[-1]
 
-                            yield TokenInfo(ASYNC, stashed.string,
-                                            stashed.start, stashed.end,
-                                            stashed.line)
-                            stashed = None
+                        yield TokenInfo(ASYNC, stashed.string,
+                                        stashed.start, stashed.end,
+                                        stashed.line)
+                        stashed = None
 
                     if stashed:
                         yield stashed
@@ -702,7 +696,7 @@ def _tokenize(readline, encoding):
         yield stashed
         stashed = None
 
-    for indent in indents[1:]:                 # pop remaining indent levels
+    for _ in indents[1:]:                 # pop remaining indent levels
         yield TokenInfo(DEDENT, '', (lnum, 0), (lnum, 0), '')
     yield TokenInfo(ENDMARKER, '', (lnum, 0), (lnum, 0), '')
 

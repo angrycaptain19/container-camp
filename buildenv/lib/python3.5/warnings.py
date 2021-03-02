@@ -11,9 +11,9 @@ def showwarning(message, category, filename, lineno, file=None, line=None):
     """Hook to write a warning to a file; replace if you like."""
     if file is None:
         file = sys.stderr
-        if file is None:
-            # sys.stderr is None when run with pythonw.exe - warnings get lost
-            return
+    if file is None:
+        # sys.stderr is None when run with pythonw.exe - warnings get lost
+        return
     try:
         file.write(formatwarning(message, category, filename, lineno, line))
     except OSError:
@@ -205,7 +205,7 @@ def warn(message, category=None, stacklevel=1):
         else:
             frame = sys._getframe(1)
             # Look for one frame less since the above line starts us off.
-            for x in range(stacklevel-1):
+            for _ in range(stacklevel-1):
                 frame = _next_external_frame(frame)
                 if frame is None:
                     raise ValueError
@@ -215,10 +215,7 @@ def warn(message, category=None, stacklevel=1):
     else:
         globals = frame.f_globals
         lineno = frame.f_lineno
-    if '__name__' in globals:
-        module = globals['__name__']
-    else:
-        module = "<string>"
+    module = globals['__name__'] if '__name__' in globals else "<string>"
     filename = globals.get('__file__')
     if filename:
         fnl = filename.lower()
@@ -231,8 +228,8 @@ def warn(message, category=None, stacklevel=1):
             except AttributeError:
                 # embedded interpreters don't have sys.argv, see bug #839151
                 filename = '__main__'
-        if not filename:
-            filename = module
+    if not filename:
+        filename = module
     registry = globals.setdefault("__warningregistry__", {})
     warn_explicit(message, category, filename, lineno, module, registry,
                   globals)
@@ -423,8 +420,7 @@ except ImportError:
 # Module initialization
 _processoptions(sys.warnoptions)
 if not _warnings_defaults:
-    silence = [ImportWarning, PendingDeprecationWarning]
-    silence.append(DeprecationWarning)
+    silence = [ImportWarning, PendingDeprecationWarning, DeprecationWarning]
     for cls in silence:
         simplefilter("ignore", category=cls)
     bytes_warning = sys.flags.bytes_warning
@@ -436,10 +432,7 @@ if not _warnings_defaults:
         bytes_action = "ignore"
     simplefilter(bytes_action, category=BytesWarning, append=1)
     # resource usage warnings are enabled by default in pydebug mode
-    if hasattr(sys, 'gettotalrefcount'):
-        resource_action = "always"
-    else:
-        resource_action = "ignore"
+    resource_action = "always" if hasattr(sys, 'gettotalrefcount') else "ignore"
     simplefilter(resource_action, category=ResourceWarning, append=1)
 
 del _warnings_defaults

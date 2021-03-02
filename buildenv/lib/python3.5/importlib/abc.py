@@ -101,14 +101,14 @@ class PathEntryFinder(Finder):
         if not hasattr(self, 'find_spec'):
             return None, []
         found = self.find_spec(fullname)
-        if found is not None:
-            if not found.submodule_search_locations:
-                portions = []
-            else:
-                portions = found.submodule_search_locations
-            return found.loader, portions
-        else:
+        if found is None:
             return None, []
+
+        if found.submodule_search_locations:
+            portions = found.submodule_search_locations
+        else:
+            portions = []
+        return found.loader, portions
 
     find_module = _bootstrap_external._find_module_shim
 

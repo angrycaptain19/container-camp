@@ -304,10 +304,7 @@ def isname(name):
     # check that group name is a valid string
     if not isident(name[0]):
         return False
-    for char in name[1:]:
-        if not isident(char) and not isdigit(char):
-            return False
-    return True
+    return not any(not isident(char) and not isdigit(char) for char in name[1:])
 
 def _class_escape(source, escape):
     # handle escape code inside character class

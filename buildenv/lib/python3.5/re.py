@@ -246,10 +246,7 @@ def escape(pattern):
         s = list(pattern)
         for i, c in enumerate(pattern):
             if c not in alphanum:
-                if c == "\000":
-                    s[i] = "\\000"
-                else:
-                    s[i] = "\\" + c
+                s[i] = "\\000" if c == "\000" else "\\" + c
         return "".join(s)
     else:
         alphanum = _alphanum_bytes

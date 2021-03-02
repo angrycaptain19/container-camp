@@ -209,10 +209,7 @@ class Codec(codecs.Codec):
         else:
             trailing_dot = ''
 
-        result = []
-        for label in labels:
-            result.append(ToUnicode(label))
-
+        result = [ToUnicode(label) for label in labels]
         return ".".join(result)+trailing_dot, len(input)
 
 class IncrementalEncoder(codecs.BufferedIncrementalEncoder):

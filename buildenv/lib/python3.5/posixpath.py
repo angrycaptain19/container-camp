@@ -221,10 +221,7 @@ def ismount(path):
 def expanduser(path):
     """Expand ~ and ~user constructions.  If user or $HOME is unknown,
     do nothing."""
-    if isinstance(path, bytes):
-        tilde = b'~'
-    else:
-        tilde = '~'
+    tilde = b'~' if isinstance(path, bytes) else '~'
     if not path.startswith(tilde):
         return path
     sep = _get_sep(path)
@@ -355,10 +352,7 @@ def normpath(path):
 def abspath(path):
     """Return an absolute path."""
     if not isabs(path):
-        if isinstance(path, bytes):
-            cwd = os.getcwdb()
-        else:
-            cwd = os.getcwd()
+        cwd = os.getcwdb() if isinstance(path, bytes) else os.getcwd()
         path = join(cwd, path)
     return normpath(path)
 
@@ -482,7 +476,7 @@ def commonpath(paths):
         split_paths = [path.split(sep) for path in paths]
 
         try:
-            isabs, = set(p[:1] == sep for p in paths)
+            isabs, = {p[:1] == sep for p in paths}
         except ValueError:
             raise ValueError("Can't mix absolute and relative paths") from None
 

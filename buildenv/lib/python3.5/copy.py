@@ -275,18 +275,9 @@ def _reconstruct(x, info, deep, memo=None):
     n = len(info)
     assert n in (2, 3, 4, 5)
     callable, args = info[:2]
-    if n > 2:
-        state = info[2]
-    else:
-        state = None
-    if n > 3:
-        listiter = info[3]
-    else:
-        listiter = None
-    if n > 4:
-        dictiter = info[4]
-    else:
-        dictiter = None
+    state = info[2] if n > 2 else None
+    listiter = info[3] if n > 3 else None
+    dictiter = info[4] if n > 4 else None
     if deep:
         args = deepcopy(args, memo)
     y = callable(*args)

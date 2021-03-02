@@ -260,12 +260,12 @@ def _load_module_shim(self, fullname):
 
     """
     spec = spec_from_loader(fullname, self)
-    if fullname in sys.modules:
-        module = sys.modules[fullname]
-        _exec(spec, module)
-        return sys.modules[fullname]
-    else:
+    if fullname not in sys.modules:
         return _load(spec)
+
+    module = sys.modules[fullname]
+    _exec(spec, module)
+    return sys.modules[fullname]
 
 # Module specifications #######################################################
 
@@ -405,11 +405,10 @@ class ModuleSpec:
 
     @property
     def cached(self):
-        if self._cached is None:
-            if self.origin is not None and self._set_fileattr:
-                if _bootstrap_external is None:
-                    raise NotImplementedError
-                self._cached = _bootstrap_external._get_cached(self.origin)
+        if self._cached is None and self.origin is not None and self._set_fileattr:
+            if _bootstrap_external is None:
+                raise NotImplementedError
+            self._cached = _bootstrap_external._get_cached(self.origin)
         return self._cached
 
     @cached.setter
@@ -501,7 +500,7 @@ def _spec_from_module(module, loader=None, origin=None):
         submodule_search_locations = None
 
     spec = ModuleSpec(name, loader, origin=origin)
-    spec._set_fileattr = False if location is None else True
+    spec._set_fileattr = location is not None
     spec.cached = cached
     spec.submodule_search_locations = submodule_search_locations
     return spec
@@ -896,22 +895,21 @@ def _find_spec(name, path, target=None):
                 spec = find_spec(name, path, target)
         if spec is not None:
             # The parent import may have already imported this module.
-            if not is_reload and name in sys.modules:
-                module = sys.modules[name]
-                try:
-                    __spec__ = module.__spec__
-                except AttributeError:
-                    # We use the found spec since that is the one that
-                    # we would have used if the parent module hadn't
-                    # beaten us to the punch.
+            if is_reload or name not in sys.modules:
+                return spec
+            module = sys.modules[name]
+            try:
+                __spec__ = module.__spec__
+            except AttributeError:
+                # We use the found spec since that is the one that
+                # we would have used if the parent module hadn't
+                # beaten us to the punch.
+                return spec
+            else:
+                if __spec__ is None:
                     return spec
                 else:
-                    if __spec__ is None:
-                        return spec
-                    else:
-                        return __spec__
-            else:
-                return spec
+                    return __spec__
     else:
         return None
 
@@ -1018,9 +1016,11 @@ def _handle_fromlist(module, fromlist, import_):
                     # Backwards-compatibility dictates we ignore failed
                     # imports triggered by fromlist for modules that don't
                     # exist.
-                    if str(exc).startswith(_ERR_MSG_PREFIX):
-                        if exc.name == from_name:
-                            continue
+                    if (
+                        str(exc).startswith(_ERR_MSG_PREFIX)
+                        and exc.name == from_name
+                    ):
+                        continue
                     raise
     return module
 

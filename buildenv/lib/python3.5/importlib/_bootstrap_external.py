@@ -273,12 +273,9 @@ def cache_from_source(path, debug_override=None, *, optimization=None):
     tag = sys.implementation.cache_tag
     if tag is None:
         raise NotImplementedError('sys.implementation.cache_tag is None')
-    almost_filename = ''.join([(base if base else rest), sep, tag])
+    almost_filename = ''.join([base or rest, sep, tag])
     if optimization is None:
-        if sys.flags.optimize == 0:
-            optimization = ''
-        else:
-            optimization = sys.flags.optimize
+        optimization = '' if sys.flags.optimize == 0 else sys.flags.optimize
     optimization = str(optimization)
     if optimization != '':
         if not optimization.isalnum():
@@ -474,14 +471,14 @@ def _validate_bytecode_header(data, source_stats=None, name=None, path=None):
 def _compile_bytecode(data, name=None, bytecode_path=None, source_path=None):
     """Compile bytecode as returned by _validate_bytecode_header()."""
     code = marshal.loads(data)
-    if isinstance(code, _code_type):
-        _verbose_message('code object from {!r}', bytecode_path)
-        if source_path is not None:
-            _imp._fix_co_filename(code, source_path)
-        return code
-    else:
+    if not isinstance(code, _code_type):
         raise ImportError('Non-code object in {!r}'.format(bytecode_path),
                           name=name, path=bytecode_path)
+
+    _verbose_message('code object from {!r}', bytecode_path)
+    if source_path is not None:
+        _imp._fix_co_filename(code, source_path)
+    return code
 
 def _code_to_bytecode(code, mtime=0, source_size=0):
     """Compile a code object into bytecode for writing out to a byte-compiled
@@ -566,10 +563,9 @@ def spec_from_file_location(name, location=None, *, loader=None,
                     spec.submodule_search_locations = []
     else:
         spec.submodule_search_locations = submodule_search_locations
-    if spec.submodule_search_locations == []:
-        if location:
-            dirname = _path_split(location)[0]
-            spec.submodule_search_locations.append(dirname)
+    if spec.submodule_search_locations == [] and location:
+        dirname = _path_split(location)[0]
+        spec.submodule_search_locations.append(dirname)
 
     return spec
 
@@ -597,10 +593,7 @@ class WindowsRegistryFinder:
 
     @classmethod
     def _search_registry(cls, fullname):
-        if cls.DEBUG_BUILD:
-            registry_key = cls.REGISTRY_KEY_DEBUG
-        else:
-            registry_key = cls.REGISTRY_KEY
+        registry_key = cls.REGISTRY_KEY_DEBUG if cls.DEBUG_BUILD else cls.REGISTRY_KEY
         key = registry_key.format(fullname=fullname,
                                   sys_version=sys.version[:3])
         try:
@@ -621,10 +614,9 @@ class WindowsRegistryFinder:
             return None
         for loader, suffixes in _get_supported_file_loaders():
             if filepath.endswith(tuple(suffixes)):
-                spec = _bootstrap.spec_from_loader(fullname,
+                return _bootstrap.spec_from_loader(fullname,
                                                    loader(fullname, filepath),
                                                    origin=filepath)
-                return spec
 
     @classmethod
     def find_module(cls, fullname, path=None):
@@ -968,9 +960,12 @@ class _NamespacePath:
             spec = self._path_finder(self._name, parent_path)
             # Note that no changes are made if a loader is returned, but we
             #  do remember the new parent path
-            if spec is not None and spec.loader is None:
-                if spec.submodule_search_locations:
-                    self._path = spec.submodule_search_locations
+            if (
+                spec is not None
+                and spec.loader is None
+                and spec.submodule_search_locations
+            ):
+                self._path = spec.submodule_search_locations
             self._last_parent_path = parent_path     # Save the copy
         return self._path
 
@@ -1247,9 +1242,8 @@ class FileFinder:
         for suffix, loader_class in self._loaders:
             full_path = _path_join(self.path, tail_module + suffix)
             _verbose_message('trying {}'.format(full_path), verbosity=2)
-            if cache_module + suffix in cache:
-                if _path_isfile(full_path):
-                    return self._get_spec(loader_class, fullname, full_path, None, target)
+            if cache_module + suffix in cache and _path_isfile(full_path):
+                return self._get_spec(loader_class, fullname, full_path, None, target)
         if is_namespace:
             _verbose_message('possible namespace for {}'.format(base_path))
             spec = _bootstrap.ModuleSpec(fullname, None)
@@ -1279,10 +1273,7 @@ class FileFinder:
             lower_suffix_contents = set()
             for item in contents:
                 name, dot, suffix = item.partition('.')
-                if dot:
-                    new_name = '{}.{}'.format(name, suffix.lower())
-                else:
-                    new_name = name
+                new_name = '{}.{}'.format(name, suffix.lower()) if dot else name
                 lower_suffix_contents.add(new_name)
             self._path_cache = lower_suffix_contents
         if sys.platform.startswith(_CASE_INSENSITIVE_PLATFORMS):

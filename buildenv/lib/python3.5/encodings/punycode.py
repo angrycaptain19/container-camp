@@ -21,11 +21,7 @@ def segregate(str):
 
 def selective_len(str, max):
     """Return the length of str, considering only characters below max."""
-    res = 0
-    for c in str:
-        if ord(c) < max:
-            res += 1
-    return res
+    return sum(ord(c) < max for c in str)
 
 def selective_find(str, char, index, pos):
     """Return a pair (index, pos), indicating the next occurrence of
@@ -89,18 +85,14 @@ def generate_generalized_integer(N, bias):
         j += 1
 
 def adapt(delta, first, numchars):
-    if first:
-        delta //= 700
-    else:
-        delta //= 2
+    delta //= 700 if first else 2
     delta += delta // numchars
     # ((base - tmin) * tmax) // 2 == 455
     divisions = 0
     while delta > 455:
         delta = delta // 35 # base - tmin
         divisions += 36
-    bias = divisions + (36 * delta // (delta + 38))
-    return bias
+    return divisions + (36 * delta // (delta + 38))
 
 
 def generate_integers(baselen, deltas):
@@ -150,7 +142,7 @@ def decode_generalized_number(extended, extpos, bias, errors):
         result += digit * w
         if digit < t:
             return extpos, result
-        w = w * (36 - t)
+        w *= 36 - t
         j += 1
 
 
@@ -173,7 +165,7 @@ def insertion_sort(base, extended, errors):
             if errors == "strict":
                 raise UnicodeError("Invalid character U+%x" % char)
             char = ord('?')
-        pos = pos % (len(base) + 1)
+        pos %= len(base) + 1
         base = base[:pos] + chr(char) + base[pos:]
         bias = adapt(delta, (extpos == 0), len(base))
         extpos = newpos

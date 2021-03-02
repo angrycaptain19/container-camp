@@ -161,9 +161,10 @@ class AsyncIterable(metaclass=ABCMeta):
 
     @classmethod
     def __subclasshook__(cls, C):
-        if cls is AsyncIterable:
-            if any("__aiter__" in B.__dict__ for B in C.__mro__):
-                return True
+        if cls is AsyncIterable and any(
+            "__aiter__" in B.__dict__ for B in C.__mro__
+        ):
+            return True
         return NotImplemented
 
 
@@ -181,10 +182,11 @@ class AsyncIterator(AsyncIterable):
 
     @classmethod
     def __subclasshook__(cls, C):
-        if cls is AsyncIterator:
-            if (any("__anext__" in B.__dict__ for B in C.__mro__) and
-                any("__aiter__" in B.__dict__ for B in C.__mro__)):
-                return True
+        if cls is AsyncIterator and (
+            any("__anext__" in B.__dict__ for B in C.__mro__)
+            and any("__aiter__" in B.__dict__ for B in C.__mro__)
+        ):
+            return True
         return NotImplemented
 
 
@@ -199,9 +201,8 @@ class Iterable(metaclass=ABCMeta):
 
     @classmethod
     def __subclasshook__(cls, C):
-        if cls is Iterable:
-            if any("__iter__" in B.__dict__ for B in C.__mro__):
-                return True
+        if cls is Iterable and any("__iter__" in B.__dict__ for B in C.__mro__):
+            return True
         return NotImplemented
 
 
@@ -219,10 +220,11 @@ class Iterator(Iterable):
 
     @classmethod
     def __subclasshook__(cls, C):
-        if cls is Iterator:
-            if (any("__next__" in B.__dict__ for B in C.__mro__) and
-                any("__iter__" in B.__dict__ for B in C.__mro__)):
-                return True
+        if cls is Iterator and (
+            any("__next__" in B.__dict__ for B in C.__mro__)
+            and any("__iter__" in B.__dict__ for B in C.__mro__)
+        ):
+            return True
         return NotImplemented
 
 Iterator.register(bytes_iterator)
@@ -307,9 +309,8 @@ class Sized(metaclass=ABCMeta):
 
     @classmethod
     def __subclasshook__(cls, C):
-        if cls is Sized:
-            if any("__len__" in B.__dict__ for B in C.__mro__):
-                return True
+        if cls is Sized and any("__len__" in B.__dict__ for B in C.__mro__):
+            return True
         return NotImplemented
 
 
@@ -323,9 +324,10 @@ class Container(metaclass=ABCMeta):
 
     @classmethod
     def __subclasshook__(cls, C):
-        if cls is Container:
-            if any("__contains__" in B.__dict__ for B in C.__mro__):
-                return True
+        if cls is Container and any(
+            "__contains__" in B.__dict__ for B in C.__mro__
+        ):
+            return True
         return NotImplemented
 
 
@@ -339,9 +341,8 @@ class Callable(metaclass=ABCMeta):
 
     @classmethod
     def __subclasshook__(cls, C):
-        if cls is Callable:
-            if any("__call__" in B.__dict__ for B in C.__mro__):
-                return True
+        if cls is Callable and any("__call__" in B.__dict__ for B in C.__mro__):
+            return True
         return NotImplemented
 
 
@@ -367,10 +368,7 @@ class Set(Sized, Iterable, Container):
             return NotImplemented
         if len(self) > len(other):
             return False
-        for elem in self:
-            if elem not in other:
-                return False
-        return True
+        return all(elem in other for elem in self)
 
     def __lt__(self, other):
         if not isinstance(other, Set):
@@ -387,10 +385,7 @@ class Set(Sized, Iterable, Container):
             return NotImplemented
         if len(self) < len(other):
             return False
-        for elem in other:
-            if elem not in self:
-                return False
-        return True
+        return all(elem in self for elem in other)
 
     def __eq__(self, other):
         if not isinstance(other, Set):
@@ -415,10 +410,7 @@ class Set(Sized, Iterable, Container):
 
     def isdisjoint(self, other):
         'Return True if two sets have a null intersection.'
-        for value in other:
-            if value in self:
-                return False
-        return True
+        return all(value not in self for value in other)
 
     def __or__(self, other):
         if not isinstance(other, Iterable):
@@ -684,10 +676,7 @@ class ValuesView(MappingView):
     __slots__ = ()
 
     def __contains__(self, value):
-        for key in self._mapping:
-            if value == self._mapping[key]:
-                return True
-        return False
+        return any(value == self._mapping[key] for key in self._mapping)
 
     def __iter__(self):
         for key in self._mapping:
@@ -819,10 +808,7 @@ class Sequence(Sized, Iterable, Container):
             return
 
     def __contains__(self, value):
-        for v in self:
-            if v == value:
-                return True
-        return False
+        return value in self
 
     def __reversed__(self):
         for i in reversed(range(len(self))):
@@ -849,7 +835,7 @@ class Sequence(Sized, Iterable, Container):
 
     def count(self, value):
         'S.count(value) -> integer -- return number of occurrences of value'
-        return sum(1 for v in self if v == value)
+        return self.count(value)
 
 Sequence.register(tuple)
 Sequence.register(str)

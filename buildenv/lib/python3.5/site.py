@@ -122,7 +122,7 @@ def removeduppaths():
         # if they only differ in case); turn relative paths into absolute
         # paths.
         dir, dircase = makepath(dir)
-        if not dircase in known_paths:
+        if dircase not in known_paths:
             L.append(dir)
             known_paths.add(dircase)
     sys.path[:] = L
@@ -174,7 +174,7 @@ def addpackage(sitedir, name, known_paths):
                 continue
             line = line.rstrip()
             dir, dircase = makepath(sitedir, line)
-            if not dircase in known_paths and os.path.exists(dir):
+            if dircase not in known_paths and os.path.exists(dir):
                 sys.path.append(dir)
                 known_paths.add(dircase)
     finally:
@@ -192,7 +192,7 @@ def addsitedir(sitedir, known_paths=None):
     else:
         reset = 0
     sitedir, sitedircase = makepath(sitedir)
-    if not sitedircase in known_paths:
+    if sitedircase not in known_paths:
         sys.path.append(sitedir)        # Add path component
     try:
         names = os.listdir(sitedir)
@@ -426,9 +426,8 @@ class _Printer(object):
             for filename in self.__files:
                 filename = os.path.join(dir, filename)
                 try:
-                    fp = open(filename, "rU")
-                    data = fp.read()
-                    fp.close()
+                    with open(filename, "rU") as fp:
+                        data = fp.read()
                     break
                 except IOError:
                     pass
@@ -550,12 +549,11 @@ def execsitecustomize():
         pass
 
 def virtual_install_main_packages():
-    f = open(os.path.join(os.path.dirname(__file__), 'orig-prefix.txt'))
-    sys.real_prefix = f.read().strip()
-    f.close()
-    pos = 2
+    with open(os.path.join(os.path.dirname(__file__), 'orig-prefix.txt')) as f:
+        sys.real_prefix = f.read().strip()
     hardcoded_relative_dirs = []
     if sys.path[0] == '':
+        pos = 2
         pos += 1
     if _is_jython:
         paths = [os.path.join(sys.real_prefix, 'Lib')]

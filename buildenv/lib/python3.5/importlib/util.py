@@ -49,18 +49,17 @@ def _find_spec_from_path(name, path=None):
     """
     if name not in sys.modules:
         return _find_spec(name, path)
+    module = sys.modules[name]
+    if module is None:
+        return None
+    try:
+        spec = module.__spec__
+    except AttributeError:
+        raise ValueError('{}.__spec__ is not set'.format(name)) from None
     else:
-        module = sys.modules[name]
-        if module is None:
-            return None
-        try:
-            spec = module.__spec__
-        except AttributeError:
-            raise ValueError('{}.__spec__ is not set'.format(name)) from None
-        else:
-            if spec is None:
-                raise ValueError('{}.__spec__ is None'.format(name))
-            return spec
+        if spec is None:
+            raise ValueError('{}.__spec__ is None'.format(name))
+        return spec
 
 
 def find_spec(name, package=None):
@@ -194,10 +193,7 @@ def module_for_loader(fxn):
             except (ImportError, AttributeError):
                 pass
             else:
-                if is_package:
-                    module.__package__ = fullname
-                else:
-                    module.__package__ = fullname.rpartition('.')[0]
+                module.__package__ = fullname if is_package else fullname.rpartition('.')[0]
             # If __package__ was not set above, __import__() will do it later.
             return fxn(self, module, *args, **kwargs)
 

@@ -112,12 +112,11 @@ class Random(_random.Random):
                 import time
                 a = int(time.time() * 256) # use fractional seconds
 
-        if version == 2:
-            if isinstance(a, (str, bytes, bytearray)):
-                if isinstance(a, str):
-                    a = a.encode()
-                a += _sha512(a).digest()
-                a = int.from_bytes(a, 'big')
+        if version == 2 and isinstance(a, (str, bytes, bytearray)):
+            if isinstance(a, str):
+                a = a.encode()
+            a += _sha512(a).digest()
+            a = int.from_bytes(a, 'big')
 
         super().seed(a)
         self.gauss_next = None
@@ -462,12 +461,7 @@ class Random(_random.Random):
         q = 1.0 / r
         f = (q + z) / (1.0 + q * z)
         u3 = random()
-        if u3 > 0.5:
-            theta = (mu + _acos(f)) % TWOPI
-        else:
-            theta = (mu - _acos(f)) % TWOPI
-
-        return theta
+        return (mu + _acos(f)) % TWOPI if u3 > 0.5 else (mu - _acos(f)) % TWOPI
 
 ## -------------------- gamma distribution --------------------
 
@@ -529,15 +523,14 @@ class Random(_random.Random):
                 u = random()
                 b = (_e + alpha)/_e
                 p = b*u
-                if p <= 1.0:
-                    x = p ** (1.0/alpha)
-                else:
-                    x = -_log((b-p)/alpha)
+                x = p ** (1.0/alpha) if p <= 1.0 else -_log((b-p)/alpha)
                 u1 = random()
-                if p > 1.0:
-                    if u1 <= x ** (alpha - 1.0):
-                        break
-                elif u1 <= _exp(-x):
+                if (
+                    p > 1.0
+                    and u1 <= x ** (alpha - 1.0)
+                    or p <= 1.0
+                    and u1 <= _exp(-x)
+                ):
                     break
             return x * beta
 
@@ -677,10 +670,10 @@ def _test_generator(n, func, args):
     smallest = 1e10
     largest = -1e10
     t0 = time.time()
-    for i in range(n):
+    for _ in range(n):
         x = func(*args)
         total += x
-        sqsum = sqsum + x*x
+        sqsum += x*x
         smallest = min(x, smallest)
         largest = max(x, largest)
     t1 = time.time()

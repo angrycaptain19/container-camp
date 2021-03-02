@@ -301,11 +301,7 @@ def copytree(src, dst, symlinks=False, ignore=None, copy_function=copy2,
 
     """
     names = os.listdir(src)
-    if ignore is not None:
-        ignored_names = ignore(src, names)
-    else:
-        ignored_names = set()
-
+    ignored_names = ignore(src, names) if ignore is not None else set()
     os.makedirs(dst)
     errors = []
     for name in names:
@@ -1073,10 +1069,10 @@ def get_terminal_size(fallback=(80, 24)):
             # stdout is None, closed, detached, or not a terminal, or
             # os.get_terminal_size() is unsupported
             size = os.terminal_size(fallback)
-        if columns <= 0:
-            columns = size.columns
-        if lines <= 0:
-            lines = size.lines
+    if columns <= 0:
+        columns = size.columns
+    if lines <= 0:
+        lines = size.lines
 
     return os.terminal_size((columns, lines))
 

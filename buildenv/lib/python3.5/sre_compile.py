@@ -266,15 +266,11 @@ def _optimize_charset(charset, fixup, fixes):
                     r = range(av[0], av[1]+1)
                     if fixup:
                         r = map(fixup, r)
-                    if fixup and fixes:
-                        for i in r:
-                            charmap[i] = 1
-                            if i in fixes:
-                                for k in fixes[i]:
-                                    charmap[k] = 1
-                    else:
-                        for i in r:
-                            charmap[i] = 1
+                    for i in r:
+                        charmap[i] = 1
+                        if fixup and fixes and i in fixes:
+                            for k in fixes[i]:
+                                charmap[k] = 1
                 elif op is NEGATE:
                     out.append((op, av))
                 else:
@@ -414,8 +410,7 @@ def _compile_info(code, pattern, flags):
     # this contains min/max pattern width, and an optional literal
     # prefix or a character map
     lo, hi = pattern.getwidth()
-    if hi > MAXCODE:
-        hi = MAXCODE
+    hi = min(hi, MAXCODE)
     if lo == 0:
         code.extend([INFO, 4, 0, lo, hi])
         return
@@ -430,7 +425,7 @@ def _compile_info(code, pattern, flags):
         for op, av in pattern.data:
             if op is LITERAL:
                 if len(prefix) == prefix_skip:
-                    prefix_skip = prefix_skip + 1
+                    prefix_skip += 1
                 prefixappend(av)
             elif op is SUBPATTERN and len(av[1]) == 1:
                 op, av = av[1][0]
@@ -482,7 +477,8 @@ def _compile_info(code, pattern, flags):
     # add an info block
     emit = code.append
     emit(INFO)
-    skip = len(code); emit(0)
+    skip = len(code)
+    emit(0)
     # literal flag
     mask = 0
     if prefix:

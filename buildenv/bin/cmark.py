@@ -13,9 +13,7 @@ args = parser.parse_args()
 parser = CommonMark.DocParser()
 f = args.infile
 o = args.o
-lines = []
-for line in f:
-    lines.append(line)
+lines = [line for line in f]
 data = "".join(lines)
 ast = parser.parse(data)
 if not args.a and not args.aj:

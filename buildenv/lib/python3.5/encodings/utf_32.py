@@ -106,15 +106,15 @@ class StreamWriter(codecs.StreamWriter):
         self.encoder = None
 
     def encode(self, input, errors='strict'):
-        if self.encoder is None:
-            result = codecs.utf_32_encode(input, errors)
-            if sys.byteorder == 'little':
-                self.encoder = codecs.utf_32_le_encode
-            else:
-                self.encoder = codecs.utf_32_be_encode
-            return result
-        else:
+        if self.encoder is not None:
             return self.encoder(input, errors)
+
+        result = codecs.utf_32_encode(input, errors)
+        if sys.byteorder == 'little':
+            self.encoder = codecs.utf_32_le_encode
+        else:
+            self.encoder = codecs.utf_32_be_encode
+        return result
 
 class StreamReader(codecs.StreamReader):
 
